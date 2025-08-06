@@ -203,10 +203,10 @@ def log_likelihood(
     if sigmaDM <= 0 or sigma_alpha <= 0 or sigmaDM > 2.0 or sigma_alpha > 2.0:
         return -np.inf
     
-    A_eta = 1
+    # A_eta = 1
 
     try:
-        A_eta = cached_A_interp(mu0, sigmaDM, beta, 0.0)
+        A_eta = cached_A_interp(mu0, sigmaDM, beta)
         if not np.isfinite(A_eta) or A_eta <= 0:
             return -np.inf
     except Exception:
