@@ -8,7 +8,6 @@ import numpy as np
 # logM_star = log_alpha_sps + logM_sps
 
 
-
 def lens_properties(model, beta_unit):
    xA, xB = solve_single_lens(model, beta_unit)
    kappaA = model.kappa(xA)
@@ -44,7 +43,7 @@ def lens_properties(model, beta_unit):
    
 # add source properties
 
-def observed_data(input_df, caustic=False, scatter_Mstar=None):
+def observed_data(input_df, caustic=False):
    """
    计算 lens 的属性，并返回包含源属性的字典
    """
@@ -69,11 +68,11 @@ def observed_data(input_df, caustic=False, scatter_Mstar=None):
    magnitude_observedA = m_s - 2.5 * np.log10(properties['magnificationA']) + np.random.normal(loc=0.0, scale=scatter_mag)
    magnitude_observedB = m_s - 2.5 * np.log10(properties['magnificationB']) + np.random.normal(loc=0.0, scale=scatter_mag)
 
-   if scatter_Mstar is None:
-       scatter_Mstar = 0.1
-   # scatter_Mstar = 0.1  # [Msun] 源质量的散射
+
+   scatter_Mstar = 0.1  # [Msun] 源质量的散射
 
 
+   
 
 
 

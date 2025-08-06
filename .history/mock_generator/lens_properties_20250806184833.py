@@ -7,6 +7,7 @@ import numpy as np
 # M_star = alpha_sps * M_sps
 # logM_star = log_alpha_sps + logM_sps
 
+from .. import main
 
 
 def lens_properties(model, beta_unit):

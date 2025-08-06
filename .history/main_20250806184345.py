@@ -13,8 +13,7 @@ import matplotlib
 matplotlib.use("TkAgg")  # 或者 Qt5Agg, MacOSX
 
 
-
-# scatter_Mstar = 0.01
+scatter_M
 
 def main() -> None:
     # Generate mock data for  samples
@@ -28,7 +27,7 @@ def main() -> None:
     grids = precompute_grids(mock_observed_data, logMh_grid)
     nsteps = 6000
     # Run MCMC sampling for 10000 steps
-    sampler = run_mcmc(grids, logM_sps_obs, nsteps=nsteps, nwalkers=20, backend_file="chains_eta_new_table_no_eta_variedms10006_sigma001.h5", parallel=True, nproc=mp.cpu_count()-3)
+    sampler = run_mcmc(grids, logM_sps_obs, nsteps=nsteps, nwalkers=20, backend_file="chains_eta_new_table_no_eta_variedms10006.h5", parallel=True, nproc=mp.cpu_count()-3)
     chain = sampler.get_chain(discard=nsteps-2000, flat=True)
     print("MCMC sampling completed.")
 

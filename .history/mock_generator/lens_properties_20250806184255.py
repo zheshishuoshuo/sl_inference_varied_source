@@ -7,6 +7,13 @@ import numpy as np
 # M_star = alpha_sps * M_sps
 # logM_star = log_alpha_sps + logM_sps
 
+from .. import main
+
+if hasattr(main, 'scatter_Mstar'):
+    scatter_Mstar_set = main.scatter_Mstar
+    print("foo imported from A:", foo)
+else:
+    print("A does not have 'foo'")
 
 
 def lens_properties(model, beta_unit):
@@ -44,7 +51,7 @@ def lens_properties(model, beta_unit):
    
 # add source properties
 
-def observed_data(input_df, caustic=False, scatter_Mstar=None):
+def observed_data(input_df, caustic=False):
    """
    计算 lens 的属性，并返回包含源属性的字典
    """
@@ -69,10 +76,8 @@ def observed_data(input_df, caustic=False, scatter_Mstar=None):
    magnitude_observedA = m_s - 2.5 * np.log10(properties['magnificationA']) + np.random.normal(loc=0.0, scale=scatter_mag)
    magnitude_observedB = m_s - 2.5 * np.log10(properties['magnificationB']) + np.random.normal(loc=0.0, scale=scatter_mag)
 
-   if scatter_Mstar is None:
-       scatter_Mstar = 0.1
-   # scatter_Mstar = 0.1  # [Msun] 源质量的散射
 
+   scatter_Mstar = 0.1  # [Msun] 源质量的散射
 
 
 

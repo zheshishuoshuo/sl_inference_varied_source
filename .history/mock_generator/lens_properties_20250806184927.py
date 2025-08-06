@@ -70,7 +70,7 @@ def observed_data(input_df, caustic=False, scatter_Mstar=None):
    magnitude_observedB = m_s - 2.5 * np.log10(properties['magnificationB']) + np.random.normal(loc=0.0, scale=scatter_mag)
 
    if scatter_Mstar is None:
-       scatter_Mstar = 0.1
+       scatter_Mstar = 0.01
    # scatter_Mstar = 0.1  # [Msun] 源质量的散射
 
 

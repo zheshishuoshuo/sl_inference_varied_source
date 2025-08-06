@@ -149,7 +149,8 @@ def _single_lens_likelihood(
 
     scatter_Mstar = 0.1  # Measurement scatter of 0.1 dex
 
-
+    if hasattr(main, 'scatter_Mstar'):
+         scatter_Mstar = main.scatter_Mstar
 
     # Stellar-mass likelihood (measurement scatter of 0.1 dex)
     p_Mstar = norm.pdf(

@@ -147,7 +147,7 @@ def _single_lens_likelihood(
     p_logalpha = norm.pdf(logalpha_grid, loc=mu_alpha, scale=sigma_alpha)
 
 
-    scatter_Mstar = 0.1  # Measurement scatter of 0.1 dex
+    scatter_Mstar = 0.01  # Measurement scatter of 0.1 dex
 
 
 
