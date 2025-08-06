@@ -27,7 +27,6 @@ from ..mock_generator.lens_solver import (
     solve_lens_parameters_from_obs,
 )
 from ..mock_generator.lens_model import LensModel
-from ..utils import mag_likelihood, selection_function
 
 
 @dataclass
@@ -44,12 +43,13 @@ class LensGrid:
         Determinant of the Jacobian of the transformation.
     muA, muB:
         Magnifications of the two images.
-    selA, selB:
-        Selection-function values for the two images.
-    p_magA, p_magB:
-        Magnitude likelihoods for the two images.
     logRe:
         Observed effective radius used when generating the grid.
+    m1_obs, m2_obs:
+        Observed magnitudes of the two lensed images.
+    sigma_m, m_lim:
+        Measurement scatter and limiting magnitude used in the selection
+        function.
     """
 
     logMh_grid: np.ndarray
@@ -57,11 +57,11 @@ class LensGrid:
     detJ: np.ndarray
     muA: np.ndarray
     muB: np.ndarray
-    selA: np.ndarray
-    selB: np.ndarray
-    p_magA: np.ndarray
-    p_magB: np.ndarray
     logRe: float
+    m1_obs: float
+    m2_obs: float
+    sigma_m: float
+    m_lim: float
 
 
 def tabulate_likelihood_grids(
@@ -105,16 +105,11 @@ def tabulate_likelihood_grids(
         logRe = float(row["logRe"])
         m1_obs = float(row["magnitude_observedA"])
         m2_obs = float(row["magnitude_observedB"])
-        ms = float(row["m_s"])
 
         logMstar_list = []
         detJ_list = []
         muA_list = []
         muB_list = []
-        selA_list = []
-        selB_list = []
-        p_magA_list = []
-        p_magB_list = []
 
         for logMh in logMh_grid:
             try:
@@ -132,29 +127,16 @@ def tabulate_likelihood_grids(
                 )
                 muA = model.mu_from_rt(xA)
                 muB = model.mu_from_rt(xB)
-
-                selA = selection_function(muA, m_lim, ms, sigma_m)
-                selB = selection_function(muB, m_lim, ms, sigma_m)
-                p_magA = mag_likelihood(m1_obs, muA, ms, sigma_m)
-                p_magB = mag_likelihood(m2_obs, muB, ms, sigma_m)
             except Exception:
                 logM_star = np.nan
                 detJ = 0.0
                 muA = np.nan
                 muB = np.nan
-                selA = 0.0
-                selB = 0.0
-                p_magA = 0.0
-                p_magB = 0.0
 
             logMstar_list.append(logM_star)
             detJ_list.append(detJ)
             muA_list.append(muA)
             muB_list.append(muB)
-            selA_list.append(selA)
-            selB_list.append(selB)
-            p_magA_list.append(p_magA)
-            p_magB_list.append(p_magB)
 
         results.append(
             LensGrid(
@@ -163,11 +145,11 @@ def tabulate_likelihood_grids(
                 detJ=np.array(detJ_list),
                 muA=np.array(muA_list),
                 muB=np.array(muB_list),
-                selA=np.array(selA_list),
-                selB=np.array(selB_list),
-                p_magA=np.array(p_magA_list),
-                p_magB=np.array(p_magB_list),
                 logRe=logRe,
+                m1_obs=m1_obs,
+                m2_obs=m2_obs,
+                sigma_m=sigma_m,
+                m_lim=m_lim,
             )
         )
 
