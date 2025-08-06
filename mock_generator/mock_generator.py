@@ -57,14 +57,15 @@ from .mass_sampler import generate_samples
 import multiprocessing
 
 
-def simulate_single_lens(i, samples, beta_samp, logalpha_sps_sample, mag_source, maximum_magnitude, zl, zs):
+def simulate_single_lens(i, samples, beta_samp, logalpha_sps_sample,
+                        maximum_magnitude, zl, zs):
     input_df = pd.DataFrame({
         'logM_star_sps': [samples['logM_star_sps'][i]],
         'logM_star': [samples['logM_star_sps'][i] + logalpha_sps_sample[i]],
         'logM_halo': [samples['logMh'][i]],
         'logRe': [samples['logRe'][i]],
         'beta_unit': [beta_samp[i]],
-        'mag_source': [mag_source],
+        'm_s': [samples['m_s'][i]],
         'maximum_magnitude': [maximum_magnitude],
         'logalpha_sps': [logalpha_sps_sample[i]],
         'zl': [zl],
@@ -73,13 +74,21 @@ def simulate_single_lens(i, samples, beta_samp, logalpha_sps_sample, mag_source,
     return observed_data(input_df, caustic=False)
 
 
-def run_mock_simulation(n_samples, mag_source=26.0, maximum_magnitude=26.5,
-                        zl=0.3, zs=2.0, if_source=False, process=None):
+def run_mock_simulation(
+    n_samples,
+    maximum_magnitude=26.5,
+    zl=0.3,
+    zs=2.0,
+    if_source=False,
+    process=None,
+    alpha_s=-1.3,
+    m_s_star=24.5,
+):
     beta_samp = np.random.rand(n_samples)**0.5
     # alpha_sps = np.random.normal(loc=1.2, scale=0.2, size=n_samples)
     # logalpha_sps_sample = np.log10(alpha_sps)
     logalpha_sps_sample = np.random.normal(loc=0.1, scale=0.05, size=n_samples)  # Example logalpha_sps
-    samples = generate_samples(n_samples)
+    samples = generate_samples(n_samples, alpha_s=alpha_s, m_s_star=m_s_star)
 
     if process is None or process == 0:
         # ===== 串行计算 =====
@@ -91,7 +100,7 @@ def run_mock_simulation(n_samples, mag_source=26.0, maximum_magnitude=26.5,
                 'logM_halo': [samples['logMh'][i]],
                 'logRe': [samples['logRe'][i]],
                 'beta_unit': [beta_samp[i]],
-                'mag_source': [mag_source],
+                'm_s': [samples['m_s'][i]],
                 'maximum_magnitude': [maximum_magnitude],
                 'logalpha_sps': [logalpha_sps_sample[i]],
                 'zl': [zl],
@@ -102,8 +111,11 @@ def run_mock_simulation(n_samples, mag_source=26.0, maximum_magnitude=26.5,
 
     else:
         # ===== 并行计算 =====
-        args = [(i, samples, beta_samp, logalpha_sps_sample, mag_source,
-                 maximum_magnitude, zl, zs) for i in range(n_samples)]
+        args = [
+            (i, samples, beta_samp, logalpha_sps_sample,
+             maximum_magnitude, zl, zs)
+            for i in range(n_samples)
+        ]
 
         with multiprocessing.get_context("spawn").Pool(process) as pool:
             lens_results = list(tqdm(
@@ -115,7 +127,7 @@ def run_mock_simulation(n_samples, mag_source=26.0, maximum_magnitude=26.5,
     mock_lens_data = df_lens[df_lens['is_lensed']]
     mock_observed_data = mock_lens_data[[
         'xA', 'xB', 'logM_star_sps_observed', 'logRe',
-        'magnitude_observedA', 'magnitude_observedB'
+        'magnitude_observedA', 'magnitude_observedB', 'm_s'
     ]].copy()
 
     if if_source:

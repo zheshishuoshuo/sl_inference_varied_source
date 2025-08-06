@@ -8,7 +8,7 @@ from scipy.stats import norm, skewnorm
 from scipy.special import erf
 from ..mock_generator.lens_model import LensModel
 from ..mock_generator.lens_solver import solve_single_lens
-from ..mock_generator.mass_sampler import MODEL_PARAMS
+from ..mock_generator.mass_sampler import MODEL_PARAMS, sample_m_s
 
 MODEL_P = MODEL_PARAMS["deVauc"]
 # === Utils ===
@@ -30,7 +30,15 @@ def logRe_of_logMsps(logMsps, model='deVauc'):
 
 # === Sample Generation ===
 
-def generate_lens_samples_no_alpha(n_samples=1000, seed=42, mu_DM=13.0, sigma_DM=0.2, n_sigma=3):
+def generate_lens_samples_no_alpha(
+    n_samples=1000,
+    seed=42,
+    mu_DM=13.0,
+    sigma_DM=0.2,
+    n_sigma=3,
+    alpha_s=-1.3,
+    m_s_star=24.5,
+):
     """
     生成透镜样本，不使用 alpha_sps。
     输出：(logM_star, logRe, logMh, beta)，以及 Mh 的采样范围
@@ -42,11 +50,22 @@ def generate_lens_samples_no_alpha(n_samples=1000, seed=42, mu_DM=13.0, sigma_DM
     Mh_max = mu_DM + n_sigma * sigma_DM
     logMh = rng.uniform(Mh_min, Mh_max, n_samples)
     beta = rng.uniform(0.0, 1.0, n_samples)
-    return list(zip(logMstar, logRe, logMh, beta)), (Mh_min, Mh_max)
+    m_s = sample_m_s(alpha_s, m_s_star, size=n_samples, rng=rng)
+    return list(zip(logMstar, logRe, logMh, beta, m_s)), (Mh_min, Mh_max)
 
 # === Core Computation ===
-def compute_A_phys_eta(mu_DM_cnst, beta_DM, xi_DM, sigma_DM, samples, Mh_range,
-                       zl=0.3, zs=2.0, ms=26.0, sigma_m=0.1, m_lim=26.5):
+def compute_A_phys_eta(
+    mu_DM_cnst,
+    beta_DM,
+    xi_DM,
+    sigma_DM,
+    samples,
+    Mh_range,
+    zl=0.3,
+    zs=2.0,
+    sigma_m=0.1,
+    m_lim=26.5,
+):
     """
     计算 A(η)：物理归一化因子，考虑所有先验权重
     """
@@ -63,7 +82,7 @@ def compute_A_phys_eta(mu_DM_cnst, beta_DM, xi_DM, sigma_DM, samples, Mh_range,
     samples_array = np.asarray(samples)
     if samples_array.size == 0:
         return 0.0
-    logMstar_array, logRe_array, logMh_array, beta_array = samples_array.T
+    logMstar_array, logRe_array, logMh_array, beta_array, ms_array = samples_array.T
 
     # === DM 条件均值和权重 (向量化) ===
     logRe_model_array = logRe_of_logMsps(logMstar_array)
@@ -103,8 +122,8 @@ def compute_A_phys_eta(mu_DM_cnst, beta_DM, xi_DM, sigma_DM, samples, Mh_range,
 
     sel_prob_array = np.zeros(n)
     if np.any(valid_mask):
-        magA = ms - 2.5 * np.log10(muA_array[valid_mask])
-        magB = ms - 2.5 * np.log10(muB_array[valid_mask])
+        magA = ms_array[valid_mask] - 2.5 * np.log10(muA_array[valid_mask])
+        magB = ms_array[valid_mask] - 2.5 * np.log10(muB_array[valid_mask])
 
         selA = 0.5 * (1 + erf((m_lim - magA) / (np.sqrt(2) * sigma_m)))
         selB = 0.5 * (1 + erf((m_lim - magB) / (np.sqrt(2) * sigma_m)))
@@ -119,7 +138,11 @@ def compute_A_phys_eta(mu_DM_cnst, beta_DM, xi_DM, sigma_DM, samples, Mh_range,
 def single_A_eta_entry(args, seed=42):
     muDM, sigmaDM, beta_DM, xi_DM, n_samples, n_sigma = args
     samples, Mh_range = generate_lens_samples_no_alpha(
-        n_samples=n_samples, mu_DM=muDM, sigma_DM=sigmaDM, n_sigma=n_sigma, seed=seed
+        n_samples=n_samples,
+        mu_DM=muDM,
+        sigma_DM=sigmaDM,
+        n_sigma=n_sigma,
+        seed=seed,
     )
     A_eta = compute_A_phys_eta(
         mu_DM_cnst=muDM,

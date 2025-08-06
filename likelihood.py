@@ -37,7 +37,6 @@ def precompute_grids(
     logMh_grid: Iterable[float],
     zl: float = 0.3,
     zs: float = 2.0,
-    ms: float = 26.0,
     sigma_m: float = 0.1,
     m_lim: float = 26.5,
 ) -> list[LensGrid]:
@@ -51,7 +50,6 @@ def precompute_grids(
         logMh_grid,
         zl=zl,
         zs=zs,
-        ms=ms,
         sigma_m=sigma_m,
         m_lim=m_lim,
     )

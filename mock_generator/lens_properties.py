@@ -43,11 +43,11 @@ def lens_properties(model, beta_unit=0.5):
    
 # add source properties
 
-def observed_data(input_df, caustic= False):
+def observed_data(input_df, caustic=False):
    """
    计算 lens 的属性，并返回包含源属性的字典
    """
-   mag_source = input_df['mag_source'].values[0]  # [mag]
+   m_s = input_df['m_s'].values[0]  # [mag]
    maximum_magnitude = input_df['maximum_magnitude'].values[0]  # [mag]
    beta_unit = input_df['beta_unit'].values[0]  # [kpc]
    logalpha_sps = input_df['logalpha_sps'].values[0]
@@ -65,8 +65,8 @@ def observed_data(input_df, caustic= False):
    
    scatter_mag = 0.1  # [mag] 源光度的散射
    properties['scatter_mag'] = scatter_mag
-   magnitude_observedA = mag_source - 2.5 * np.log10(properties['magnificationA']) + np.random.normal(loc=0.0, scale=scatter_mag)
-   magnitude_observedB = mag_source - 2.5 * np.log10(properties['magnificationB']) + np.random.normal(loc=0.0, scale=scatter_mag)
+   magnitude_observedA = m_s - 2.5 * np.log10(properties['magnificationA']) + np.random.normal(loc=0.0, scale=scatter_mag)
+   magnitude_observedB = m_s - 2.5 * np.log10(properties['magnificationB']) + np.random.normal(loc=0.0, scale=scatter_mag)
 
 
    scatter_Mstar = 0.1  # [Msun] 源质量的散射
@@ -82,7 +82,7 @@ def observed_data(input_df, caustic= False):
    # 添加源属性
    properties['magnitude_observedA'] = magnitude_observedA  # [mag]
    properties['magnitude_observedB'] = magnitude_observedB  # [mag]
-   properties['mag_source'] = mag_source  # [mag]
+   properties['m_s'] = m_s  # [mag]
    properties['maximum_magnitude'] = maximum_magnitude  # [mag]
    properties['beta_unit'] = beta_unit  # [kpc]
    properties['logalpha_sps'] = logalpha_sps  # [Msun]
