@@ -18,7 +18,7 @@ matplotlib.use("TkAgg")  # 或者 Qt5Agg, MacOSX
 # scatter_Mstar = 0.01
 
 def main() -> None:
-    scatter = 0.1  # Global measurement scatter (dex or mag)
+    scatter = 0.001  # Global measurement scatter (dex or mag)
     config.OBS_SCATTER_STAR = scatter
 
     # Generate mock data for  samples
