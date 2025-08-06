@@ -24,7 +24,7 @@ from .utils import mag_likelihood, selection_function
 from .cached_A import cached_A_interp
 from .make_tabulate.make_tabulate import LensGrid, tabulate_likelihood_grids
 from .mock_generator.mass_sampler import MODEL_PARAMS
-from .config import OBS_SCATTER_STAR, OBS_SCATTER_MAG
+from .config import OBS_SCATTER_STAR, OBS_SCATTER
 
 
 # Parameters of the generative model (default: deVauc) used for sizes
@@ -66,7 +66,7 @@ def precompute_grids(
     """
 
     if sigma_m is None:
-        sigma_m = OBS_SCATTER_MAG
+        sigma_m = OBS_SCATTER
 
     return tabulate_likelihood_grids(
         mock_observed_data,
@@ -151,7 +151,7 @@ def _single_lens_likelihood(
     p_logalpha = norm.pdf(logalpha_grid, loc=mu_alpha, scale=sigma_alpha)
 
 
-    scatter_Mstar = OBS_SCATTER_STAR  # Measurement scatter
+    scatter_Mstar = OBS_SCATTER  # Measurement scatter
 
 
 

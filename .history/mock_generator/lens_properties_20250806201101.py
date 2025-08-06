@@ -1,7 +1,7 @@
 from .lens_solver import solve_single_lens
 from .lens_model import kpc_to_arcsec, LensModel
 from ..sl_cosmology import Dang
-from ..config import OBS_SCATTER_STAR, OBS_SCATTER_MAG
+from ..config import OBS_SCATTER
 import numpy as np
 
 # SPS PARAMETER
@@ -65,13 +65,13 @@ def observed_data(input_df, caustic=False, scatter_Mstar=None):
 
    # magnificationA, magnificationB = properties['magnificationA'], properties['magnificationB']
    
-   scatter_mag = OBS_SCATTER_MAG  # [mag] 源光度的散射
+   scatter_mag = OBS_SCATTER  # [mag] 源光度的散射
    properties['scatter_mag'] = scatter_mag
    magnitude_observedA = m_s - 2.5 * np.log10(properties['magnificationA']) + np.random.normal(loc=0.0, scale=scatter_mag)
    magnitude_observedB = m_s - 2.5 * np.log10(properties['magnificationB']) + np.random.normal(loc=0.0, scale=scatter_mag)
 
    if scatter_Mstar is None:
-       scatter_Mstar = OBS_SCATTER_STAR  # [Msun] 源质量的散射
+       scatter_Mstar = OBS_SCATTER
    # scatter_Mstar = 0.1  # [Msun] 源质量的散射
 
 
