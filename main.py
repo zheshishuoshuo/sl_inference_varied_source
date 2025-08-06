@@ -8,6 +8,7 @@ from .mock_generator.mock_generator import run_mock_simulation
 from .likelihood import precompute_grids
 from .run_mcmc import run_mcmc
 from .plotting import plot_chain
+from . import config
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")  # 或者 Qt5Agg, MacOSX
@@ -17,6 +18,9 @@ matplotlib.use("TkAgg")  # 或者 Qt5Agg, MacOSX
 # scatter_Mstar = 0.01
 
 def main() -> None:
+    scatter = 0.1  # Global measurement scatter (dex or mag)
+    config.OBS_SCATTER = scatter
+
     # Generate mock data for  samples
     mock_lens_data, mock_observed_data = run_mock_simulation(1000)
     logM_sps_obs = mock_observed_data["logM_star_sps_observed"].values
@@ -25,7 +29,7 @@ def main() -> None:
 
     # Precompute grids on halo mass
     logMh_grid = np.linspace(11.5, 14.0, 100)
-    grids = precompute_grids(mock_observed_data, logMh_grid)
+    grids = precompute_grids(mock_observed_data, logMh_grid, sigma_m=scatter)
     nsteps = 6000
     # Run MCMC sampling for 10000 steps
     sampler = run_mcmc(grids, logM_sps_obs, nsteps=nsteps, nwalkers=20, backend_file="chains_eta_new_table_no_eta_variedms10006_sigma001.h5", parallel=True, nproc=mp.cpu_count()-3)
