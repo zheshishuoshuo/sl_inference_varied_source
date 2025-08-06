@@ -45,6 +45,59 @@ MODEL_PARAMS = {
 }
 
 # ==============================
+# 源星等分布采样
+# ==============================
+def sample_m_s(alpha_s, m_s_star, size=1, rng=None, m_min=20.0, m_max=30.0):
+    """Sample source magnitudes from the Schechter-like distribution.
+
+    The probability density is proportional to
+
+    .. math::
+
+        [10^{-0.4(m_s - m_s^*)}]^{\alpha_s + 1}\, \exp[-10^{-0.4(m_s - m_s^*)}].
+
+    Parameters
+    ----------
+    alpha_s : float
+        The power-law slope of the luminosity function.
+    m_s_star : float
+        The characteristic magnitude.
+    size : int, optional
+        Number of samples to draw, by default 1.
+    rng : ``np.random.Generator``, optional
+        Random-number generator for reproducibility.
+    m_min, m_max : float, optional
+        Allowed magnitude range for rejection sampling.
+
+    Returns
+    -------
+    ndarray or float
+        Sampled magnitudes.  A scalar is returned if ``size==1``.
+    """
+
+    if rng is None:
+        rng = np.random.default_rng()
+
+    def pdf(m):
+        L = 10 ** (-0.4 * (m - m_s_star))
+        return L ** (alpha_s + 1) * np.exp(-L)
+
+    # Find an upper bound for the PDF within [m_min, m_max]
+    grid = np.linspace(m_min, m_max, 1000)
+    p_max = pdf(grid).max()
+
+    samples = np.empty(size)
+    i = 0
+    while i < size:
+        m_try = rng.uniform(m_min, m_max)
+        u = rng.uniform(0, p_max)
+        if u < pdf(m_try):
+            samples[i] = m_try
+            i += 1
+
+    return samples if size > 1 else samples[0]
+
+# ==============================
 # 生成 logM_star_sps 样本（skew-normal）
 # ==============================
 def mstar_gene(n, model='deVauc', rng=None):
@@ -73,7 +126,13 @@ def logMh_given_logM_logRe(logM_star_sps, logRe, model='deVauc', rng=None):
 # ==============================
 # 主函数：生成完整样本
 # ==============================
-def generate_samples(n_samples, model='deVauc', random_state=None):
+def generate_samples(
+    n_samples,
+    model='deVauc',
+    random_state=None,
+    alpha_s=-1.3,
+    m_s_star=24.5,
+):
     """
     生成星系参数样本，包括：
     - logM_star_sps: stellar mass (SPS)
@@ -89,7 +148,7 @@ def generate_samples(n_samples, model='deVauc', random_state=None):
         random_state: 可选整数或 np.random.Generator
 
     返回:
-        dict，包含字段 logM_star_sps, logRe, logMh, z, gamma_in, C
+        dict，包含字段 logM_star_sps, logRe, logMh, m_s, z, gamma_in, C
     """
     if isinstance(random_state, (int, type(None))):
         rng = np.random.default_rng(random_state)
@@ -101,11 +160,13 @@ def generate_samples(n_samples, model='deVauc', random_state=None):
     logM_star_sps = mstar_gene(n_samples, model=model, rng=rng)
     logRe = logRe_given_logM(logM_star_sps, model=model, rng=rng)
     logMh = logMh_given_logM_logRe(logM_star_sps, logRe, model=model, rng=rng)
+    m_s = sample_m_s(alpha_s, m_s_star, size=n_samples, rng=rng)
 
     return {
         'logM_star_sps': logM_star_sps,
         'logRe': logRe,
         'logMh': logMh,
+        'm_s': m_s,
         'z': np.ones(n_samples),
         'gamma_in': np.ones(n_samples),
         'C': np.ones(n_samples) * 20

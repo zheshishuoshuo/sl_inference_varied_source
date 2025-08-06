@@ -7,24 +7,33 @@ from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 from ..lens_model import LensModel
 from ..lens_solver import solve_single_lens
+from ..mass_sampler import sample_m_s
 
 # ==== 常数 ====
 m_lim = 26.5
 sigma_m = 0.1
-ms = 26
 
 # ==== 样本生成函数 ====
-def generate_lens_samples_no_alpha(n_samples=1000, seed=42, mu_DM=13.0, sigma_DM=0.2, n_sigma=3):
+def generate_lens_samples_no_alpha(
+    n_samples=1000,
+    seed=42,
+    mu_DM=13.0,
+    sigma_DM=0.2,
+    n_sigma=3,
+    alpha_s=-1.3,
+    m_s_star=24.5,
+):
     rng = np.random.default_rng(seed)
     logMstar = rng.normal(11.4, 0.3, n_samples)
     logRe = rng.normal(1 + 0.8 * (logMstar - 11.4), 0.15, n_samples)
-    
+
     Mh_min = mu_DM - n_sigma * sigma_DM
     Mh_max = mu_DM + n_sigma * sigma_DM
     logMh = rng.uniform(Mh_min, Mh_max, n_samples)
-    
+
     beta = rng.uniform(0.0, 1.0, n_samples)
-    return list(zip(logMstar, logRe, logMh, beta)), (Mh_min, Mh_max)
+    m_s = sample_m_s(alpha_s, m_s_star, size=n_samples, rng=rng)
+    return list(zip(logMstar, logRe, logMh, beta, m_s)), (Mh_min, Mh_max)
 
 # ==== A_phys 计算函数 ====
 def compute_A_phys_eta(mu_DM, sigma_DM, samples, Mh_range, zl=0.3, zs=2.0):
@@ -38,7 +47,7 @@ def compute_A_phys_eta(mu_DM, sigma_DM, samples, Mh_range, zl=0.3, zs=2.0):
     total = 0.0
     valid = 0
 
-    for i, (logMstar, logRe, logMh, beta) in enumerate(samples):
+    for i, (logMstar, logRe, logMh, beta, m_s) in enumerate(samples):
         try:
             model = LensModel(logMstar, logMh, logRe, zl=zl, zs=zs)
             xA, xB = solve_single_lens(model, beta_unit=beta)
@@ -49,8 +58,8 @@ def compute_A_phys_eta(mu_DM, sigma_DM, samples, Mh_range, zl=0.3, zs=2.0):
         if muA <= 0 or muB <= 0 or not np.isfinite(muA * muB):
             continue
 
-        magA = ms - 2.5 * np.log10(muA)
-        magB = ms - 2.5 * np.log10(muB)
+        magA = m_s - 2.5 * np.log10(muA)
+        magB = m_s - 2.5 * np.log10(muB)
 
         sel_prob1 = 0.5 * (1 + erf((m_lim - magA) / (np.sqrt(2) * sigma_m)))
         sel_prob2 = 0.5 * (1 + erf((m_lim - magB) / (np.sqrt(2) * sigma_m)))

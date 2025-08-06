@@ -69,7 +69,6 @@ def tabulate_likelihood_grids(
     logMh_grid: Iterable[float],
     zl: float = 0.3,
     zs: float = 2.0,
-    ms: float = 26.0,
     sigma_m: float = 0.1,
     m_lim: float = 26.5,
 ) -> List[LensGrid]:
@@ -86,9 +85,9 @@ def tabulate_likelihood_grids(
         evaluated.
     zl, zs:
         Lens and source redshifts.
-    ms, sigma_m, m_lim:
-        Parameters describing the source magnitude distribution and selection
-        function, consistent with those used in the likelihood calculation.
+    sigma_m, m_lim:
+        Parameters describing the measurement scatter and limiting magnitude
+        used in the selection function.
 
     Returns
     -------
@@ -106,6 +105,7 @@ def tabulate_likelihood_grids(
         logRe = float(row["logRe"])
         m1_obs = float(row["magnitude_observedA"])
         m2_obs = float(row["magnitude_observedB"])
+        ms = float(row["m_s"])
 
         logMstar_list = []
         detJ_list = []
