@@ -151,7 +151,7 @@ def _single_lens_likelihood(
     p_logalpha = norm.pdf(logalpha_grid, loc=mu_alpha, scale=sigma_alpha)
 
 
-    scatter_Mstar = OBS_SCATTER_STAR  # Measurement scatter
+    scatter_Mstar = OBS_SCATTER_  # Measurement scatter
 
 
 
