@@ -25,6 +25,7 @@ from .cached_A import cached_A_interp
 from .make_tabulate.make_tabulate import LensGrid, tabulate_likelihood_grids
 from .mock_generator.mass_sampler import MODEL_PARAMS
 
+
 # Parameters of the generative model (default: deVauc) used for sizes
 MODEL_P = MODEL_PARAMS["deVauc"]
 
@@ -145,11 +146,16 @@ def _single_lens_likelihood(
     )
     p_logalpha = norm.pdf(logalpha_grid, loc=mu_alpha, scale=sigma_alpha)
 
+
+    scatter_Mstar = 0.1  # Measurement scatter of 0.1 dex
+
+
+
     # Stellar-mass likelihood (measurement scatter of 0.1 dex)
     p_Mstar = norm.pdf(
         logM_sps_obs,
         loc=logM_star[None, :] - logalpha_grid[:, None],
-        scale=0.1,  # Measurement scatter of 0.1 dex
+        scale=scatter_Mstar,  # Measurement scatter of 0.1 dex
     )
 
 
