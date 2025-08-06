@@ -19,6 +19,7 @@ from typing import Iterable, Sequence
 from scipy.stats import skewnorm, norm
 import numpy as np
 from scipy.stats import norm
+from .utils import mag_likelihood, selection_function
 
 from .cached_A import cached_A_interp
 from .make_tabulate.make_tabulate import LensGrid, tabulate_likelihood_grids
@@ -26,6 +27,23 @@ from .mock_generator.mass_sampler import MODEL_PARAMS
 
 # Parameters of the generative model (default: deVauc) used for sizes
 MODEL_P = MODEL_PARAMS["deVauc"]
+
+# Source magnitude prior parameters
+ALPHA_S = -1.3
+M_S_STAR = 24.5
+MS_MIN, MS_MAX = 20.0, 30.0
+MS_GRID = np.linspace(MS_MIN, MS_MAX, 100)
+
+
+def _source_mag_prior(ms: np.ndarray) -> np.ndarray:
+    """Schechter-like prior for unlensed source magnitudes."""
+
+    L = 10 ** (-0.4 * (ms - M_S_STAR))
+    return L ** (ALPHA_S + 1) * np.exp(-L)
+
+
+P_MS = _source_mag_prior(MS_GRID)
+P_MS /= np.trapz(P_MS, MS_GRID)
 
 
 # -----------------------------------------------------------------------------
@@ -96,8 +114,8 @@ def _single_lens_likelihood(
         np.isfinite(grid.logM_star)
         & np.isfinite(grid.detJ)
         & (grid.detJ > 0)
-        & np.isfinite(grid.p_magA)
-        & np.isfinite(grid.p_magB)
+        & np.isfinite(grid.muA)
+        & np.isfinite(grid.muB)
     )
     if not np.any(mask):
         return 0.0
@@ -105,12 +123,19 @@ def _single_lens_likelihood(
     logMh = grid.logMh_grid[mask]
     logM_star = grid.logM_star[mask]
     detJ = grid.detJ[mask]
-    selA = grid.selA[mask]
-    selB = grid.selB[mask]
-    p_magA = grid.p_magA[mask]
-    p_magB = grid.p_magB[mask]
+    muA = grid.muA[mask]
+    muB = grid.muB[mask]
 
-    const = detJ * selA * selB * p_magA * p_magB
+    # Marginalize over source magnitude
+    selA_ms = selection_function(muA[None, :], grid.m_lim, MS_GRID[:, None], grid.sigma_m)
+    selB_ms = selection_function(muB[None, :], grid.m_lim, MS_GRID[:, None], grid.sigma_m)
+    p_magA_ms = mag_likelihood(grid.m1_obs, muA[None, :], MS_GRID[:, None], grid.sigma_m)
+    p_magB_ms = mag_likelihood(grid.m2_obs, muB[None, :], MS_GRID[:, None], grid.sigma_m)
+    integral_ms = np.trapz(
+        P_MS[:, None] * selA_ms * selB_ms * p_magA_ms * p_magB_ms, MS_GRID, axis=0
+    )
+
+    const = detJ * integral_ms
 
     # Halo–mass relation conditioned on the SPS-based stellar mass
     p_logMh = norm.pdf(
