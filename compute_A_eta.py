@@ -90,23 +90,74 @@ def ms_distribution(ms_grid, alpha_s=-1.3, ms_star=24.5):
     return pdf
 
 
+    # if not (
+    #     12.0 < mu0 < 14.0
+    #     and 0 < sigmaDM < 1
+    #     and 0. < sigma_alpha < 1
+    #     and -0.3 < mu_alpha < 0.5
+    #     and 0 < beta < 5
+    # ):
+
+
 def build_eta_grid():
-    mu_DM_grid = np.linspace(12.5, 13.5, 30)
-    sigma_DM_grid = np.linspace(0.2, 0.5, 30)
-    beta_DM_grid = np.linspace(1.5, 2.5, 30)
+    mu_DM_grid = np.linspace(12, 14.0, 100)
+    sigma_DM_grid = np.linspace(0, 1, 100)
+    beta_DM_grid = np.linspace(0, 5, 100)
     return mu_DM_grid, sigma_DM_grid, beta_DM_grid
 
 
-def compute_A_eta(n_samples=10000, ms_points=15, m_lim=26.5):
-    samples = sample_lens_population(n_samples)
-    mu1, mu2 = compute_magnifications(
-        samples["logM_star"],
-        samples["logRe"],
-        samples["logMh"],
-        samples["beta"],
-        samples["zl"],
-        samples["zs"],
-    )
+def compute_A_eta(n_samples=10000, ms_points=15, m_lim=26.5, lens_file="lens_samples.csv"):
+    """Compute normalization grid A(eta).
+
+    If a cached lens sample file exists with the requested number of samples,
+    reuse it instead of regenerating the lens population and recomputing
+    magnifications.  The final A-table is accumulated per sample to avoid
+    holding large 4D arrays in memory.
+    """
+
+    lens_df = None
+    if os.path.exists(lens_file):
+        cached = pd.read_csv(lens_file)
+        if len(cached) == n_samples:
+            lens_df = cached
+            print(f"Loaded {n_samples} lens samples from {lens_file}.")
+
+    if lens_df is None:
+        samples = sample_lens_population(n_samples)
+        mu1, mu2 = compute_magnifications(
+            samples["logM_star"],
+            samples["logRe"],
+            samples["logMh"],
+            samples["beta"],
+            samples["zl"],
+            samples["zs"],
+        )
+        lens_df = pd.DataFrame(
+            {
+                "logM_star": samples["logM_star"],
+                "logRe": samples["logRe"],
+                "logMh": samples["logMh"],
+                "beta": samples["beta"],
+                "mu1": mu1,
+                "mu2": mu2,
+                "zl": np.full(n_samples, samples["zl"]),
+                "zs": np.full(n_samples, samples["zs"]),
+            }
+        )
+        lens_df.to_csv(lens_file, index=False)
+    else:
+        samples = {
+            "logM_star": lens_df["logM_star"].values,
+            "logRe": lens_df["logRe"].values,
+            "logMh": lens_df["logMh"].values,
+            "beta": lens_df["beta"].values,
+            "zl": lens_df.get("zl", pd.Series([0.3])).iloc[0],
+            "zs": lens_df.get("zs", pd.Series([2.0])).iloc[0],
+            "logMh_min": 11.0,
+            "logMh_max": 15.0,
+        }
+        mu1 = lens_df["mu1"].values
+        mu2 = lens_df["mu2"].values
 
     ms_grid = np.linspace(20.0, 30.0, ms_points)
     pdf_ms = ms_distribution(ms_grid)
@@ -117,37 +168,28 @@ def compute_A_eta(n_samples=10000, ms_points=15, m_lim=26.5):
     # correct for beta sampling (beta ~ 2*beta_uniform)
     w_static = w_ms / (2.0 * samples["beta"])
 
-    lens_df = pd.DataFrame(
-        {
-            "logM_star": samples["logM_star"],
-            "logRe": samples["logRe"],
-            "logMh": samples["logMh"],
-            "beta": samples["beta"],
-            "mu1": mu1,
-            "mu2": mu2,
-            "w_ms": w_ms,
-            "w_static": w_static,
-            "zl": np.full(n_samples, samples["zl"]),
-            "zs": np.full(n_samples, samples["zs"]),
-        }
-    )
-    lens_df.to_csv("lens_samples.csv", index=False)
+    lens_df["w_ms"] = w_ms
+    lens_df["w_static"] = w_static
+    lens_df.to_csv(lens_file, index=False)
 
     mu_DM_grid, sigma_DM_grid, beta_DM_grid = build_eta_grid()
 
-    logM_star = samples["logM_star"][:, None, None, None]
-    logMh = samples["logMh"][:, None, None, None]
-    w = w_static[:, None, None, None]
+    mu_grid = mu_DM_grid[:, None, None]
+    sigma_grid = sigma_DM_grid[None, :, None]
+    beta_grid = beta_DM_grid[None, None, :]
+    A_accum = np.zeros((mu_DM_grid.size, sigma_DM_grid.size, beta_DM_grid.size))
 
-    mu_grid = mu_DM_grid[None, :, None, None]
-    sigma_grid = sigma_DM_grid[None, None, :, None]
-    beta_grid = beta_DM_grid[None, None, None, :]
+    for logM_star_i, logMh_i, w_i in tqdm(
+        zip(samples["logM_star"], samples["logMh"], w_static),
+        total=n_samples,
+        desc="accumulating A",
+    ):
+        mean = mu_grid + beta_grid * (logM_star_i - 11.4)
+        p_Mh = norm.pdf(logMh_i, loc=mean, scale=sigma_grid)
+        A_accum += w_i * p_Mh
 
-    mean = mu_grid + beta_grid * (logM_star - 11.4)
-    p_Mh = norm.pdf(logMh, loc=mean, scale=sigma_grid)
-
-    Mh_range = samples["logMh_max"] - samples["logMh_min"]
-    A = Mh_range * np.sum(w * p_Mh, axis=0) / n_samples
+    Mh_range = samples.get("logMh_max", 15.0) - samples.get("logMh_min", 11.0)
+    A = Mh_range * A_accum / n_samples
 
     mu_flat, sigma_flat, beta_flat = np.meshgrid(
         mu_DM_grid, sigma_DM_grid, beta_DM_grid, indexing="ij"
