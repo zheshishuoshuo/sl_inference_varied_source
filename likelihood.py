@@ -91,11 +91,11 @@ def log_prior(theta: Sequence[float]) -> float:
 
     mu0, beta, sigmaDM, mu_alpha, sigma_alpha = theta
     if not (
-        12.0 < mu0 < 14.0
-        and 0 < sigmaDM < 1
-        and 0. < sigma_alpha < 1
-        and -0.3 < mu_alpha < 0.5
-        and 0 < beta < 5
+        10.0 < mu0 < 16.0
+        and 0 < sigmaDM < 10
+        and 0. < sigma_alpha < 5
+        and -0.5 < mu_alpha < 1
+        and -5 < beta < 10
     ):
         return -np.inf
     return 0.0
@@ -211,7 +211,7 @@ def log_likelihood(
             return -np.inf
     except Exception:
         return -np.inf
-    # A_eta = 1
+    A_eta = 1
 
     if logalpha_grid is None:
         logalpha_grid = np.linspace(mu_alpha - 4 * sigma_alpha, mu_alpha + 4 * sigma_alpha, 35)
