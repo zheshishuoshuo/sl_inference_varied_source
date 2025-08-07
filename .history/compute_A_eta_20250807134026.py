@@ -166,7 +166,7 @@ def compute_A_eta(n_samples=10000, ms_points=15, m_lim=26.5, lens_file="lens_sam
     p_det = sel1 * sel2
     w_ms = np.trapz(p_det * pdf_ms[None, :], ms_grid, axis=1)
     # correct for beta sampling (beta ~ 2*beta_uniform)
-    w_static = w_ms # / (2.0 * samples["beta"])
+    w_static = w_ms / (2.0 * samples["beta"])
 
     lens_df["w_ms"] = w_ms
     lens_df["w_static"] = w_static
